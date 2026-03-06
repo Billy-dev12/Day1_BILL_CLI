@@ -3,6 +3,7 @@ package main
 import (
 	"Manual_bill/internal/config"
 	"Manual_bill/internal/git"
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,14 +18,20 @@ func gitCommand(args ...string) {
 	cmd := exec.Command("git", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Error menjalankan git:", err)
+	}
 }
 
 func main() {
 
+	reader := bufio.NewReader(os.Stdin)
+
 	isGit, err := git.CekGit()
 	if err != nil {
-		fmt.Print("error sistem:", err)
+		fmt.Println("error sistem:", err)
 		return
 	}
 
@@ -32,13 +39,15 @@ func main() {
 
 		fmt.Println("Repo git ditemukan")
 
-		// input commit message
-		var commitMsg string
 		fmt.Print("Masukan pesan commit: ")
-		fmt.Scanln(&commitMsg)
+		commitMsg, _ := reader.ReadString('\n')
+		commitMsg = strings.TrimSpace(commitMsg)
 
 		gitCommand("add", ".")
 		gitCommand("commit", "-m", commitMsg)
+
+		// supaya tidak kena error fetch first
+		gitCommand("pull", "origin", "main")
 		gitCommand("push")
 
 		fmt.Println("Update repo selesai 🚀")
@@ -47,21 +56,16 @@ func main() {
 
 		fmt.Println("folder .git tidak ada, membuat repo baru...")
 
-		// input nama repo
-		var repoName string
 		fmt.Print("Masukan nama repo: ")
-		fmt.Scanln(&repoName)
-
-		repoName = fmt.Sprintf("\"%s\"", repoName)
+		repoName, _ := reader.ReadString('\n')
+		repoName = strings.TrimSpace(repoName)
 
 		gitCommand("init")
 
-		// input token github
-		var token string
 		fmt.Print("Masukan Token Github: ")
-		fmt.Scanln(&token)
+		token, _ := reader.ReadString('\n')
+		token = strings.TrimSpace(token)
 
-		// validasi token
 		if !validasiToken(token) {
 			fmt.Println("⚠ ini bukan token github")
 			return
@@ -78,6 +82,6 @@ func main() {
 		gitCommand("add", ".")
 		gitCommand("commit", "-m", "first commit")
 
-		fmt.Println("Repo berhasil dibuat 🎉")
+		fmt.Println("Repo berhasil dibuat 🎉 :", repoName)
 	}
 }
