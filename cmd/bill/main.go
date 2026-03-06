@@ -14,15 +14,41 @@ func validasiToken(token string) bool {
 	return strings.HasPrefix(token, "ghp_") || strings.HasPrefix(token, "github_pat_")
 }
 
-func gitCommand(args ...string) {
+func runGit(args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
 
-	err := cmd.Run()
+func gitAdd() {
+	runGit("add", ".")
+}
+
+func gitCommit(msg string) {
+	err := runGit("commit", "-m", msg)
 	if err != nil {
-		fmt.Println("Error menjalankan git:", err)
+		fmt.Println("Tidak ada perubahan untuk di commit")
 	}
+}
+
+func gitPull() {
+	err := runGit("pull", "--rebase", "origin", "main")
+	if err != nil {
+		fmt.Println("⚠ pull gagal, mencoba merge biasa...")
+		runGit("pull", "--no-rebase", "origin", "main")
+	}
+}
+
+func gitPush() {
+	err := runGit("push")
+	if err != nil {
+		fmt.Println("⚠ push gagal setelah pull")
+	}
+}
+
+func gitInit() {
+	runGit("init")
 }
 
 func main() {
@@ -43,12 +69,11 @@ func main() {
 		commitMsg, _ := reader.ReadString('\n')
 		commitMsg = strings.TrimSpace(commitMsg)
 
-		gitCommand("add", ".")
-		gitCommand("commit", "-m", commitMsg)
+		gitAdd()
+		gitCommit(commitMsg)
 
-		// supaya tidak kena error fetch first
-		gitCommand("pull", "origin", "main")
-		gitCommand("push")
+		gitPull()
+		gitPush()
 
 		fmt.Println("Update repo selesai 🚀")
 
@@ -60,7 +85,7 @@ func main() {
 		repoName, _ := reader.ReadString('\n')
 		repoName = strings.TrimSpace(repoName)
 
-		gitCommand("init")
+		gitInit()
 
 		fmt.Print("Masukan Token Github: ")
 		token, _ := reader.ReadString('\n')
@@ -79,8 +104,8 @@ func main() {
 
 		fmt.Println("Token berhasil disimpan di config.json")
 
-		gitCommand("add", ".")
-		gitCommand("commit", "-m", "first commit")
+		gitAdd()
+		gitCommit("first commit")
 
 		fmt.Println("Repo berhasil dibuat 🎉 :", repoName)
 	}
